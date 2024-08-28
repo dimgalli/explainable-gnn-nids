@@ -11,8 +11,8 @@ from sklearn.model_selection import train_test_split
 parser = argparse.ArgumentParser(description='Preprocess raw data')
 parser.add_argument('--benign-data', type=str, required=True, help='path to benign data')
 parser.add_argument('--malicious-data', type=str, required=True, help='path to malicious data')
-parser.add_argument('--training-data', type=str, required=True, help='path to save the training data')
-parser.add_argument('--testing-data', type=str, required=True, help='path to save the testing data')
+parser.add_argument('--train-data', type=str, required=True, help='path to save the train data')
+parser.add_argument('--test-data', type=str, required=True, help='path to save the test data')
 
 args = parser.parse_args()
 
@@ -146,5 +146,5 @@ data = pd.concat([ben_data, mal_data], ignore_index=True).sample(frac=1)
 
 train, test = train_test_split(data, test_size=0.2)
 
-train.to_csv(args.training_data, index=False)
-test.to_csv(args.testing_data, index=False)
+train.to_csv(args.train_data, index=False)
+test.to_csv(args.test_data, index=False)

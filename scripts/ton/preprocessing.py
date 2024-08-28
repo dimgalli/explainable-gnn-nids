@@ -10,8 +10,8 @@ from sklearn.model_selection import train_test_split
 parser = argparse.ArgumentParser(description='Preprocess raw data')
 parser.add_argument('--benign-data', type=str, required=True, help='path to benign data')
 parser.add_argument('--malicious-data', type=str, required=True, help='path to malicious data')
-parser.add_argument('--training-data', type=str, required=True, help='path to save the training data')
-parser.add_argument('--testing-data', type=str, required=True, help='path to save the testing data')
+parser.add_argument('--train-data', type=str, required=True, help='path to save the train data')
+parser.add_argument('--test-data', type=str, required=True, help='path to save the test data')
 
 args = parser.parse_args()
 
@@ -103,11 +103,9 @@ data.insert(37, 'tot_pkts', tot_pkts)
 
 data = data.drop(['dns_query', 'dns_qclass', 'dns_qtype', 'dns_rcode', 'dns_AA', 'dns_RD', 'dns_RA', 'dns_rejected', 'ssl_version', 'ssl_cipher', 'ssl_resumed', 'ssl_established', 'ssl_subject', 'ssl_issuer', 'http_trans_depth', 'http_method', 'http_uri', 'http_version', 'http_request_body_len', 'http_response_body_len', 'http_status_code', 'http_user_agent', 'http_orig_mime_types', 'http_resp_mime_types', 'weird_name', 'weird_addl', 'weird_notice'], axis=1)
 
-ben_data = data[data.label == 0]
-ben_data = ben_data.drop('type', axis=1)
+ben_data = data[data.label == 0].drop('type', axis=1)
 
-mal_data = data[data.label == 1]
-mal_data = mal_data.drop('type', axis=1)
+mal_data = data[data.label == 1].drop('type', axis=1)
 
 if len(ben_data) >= len(mal_data) * 10:
     ben_data = ben_data.sample(len(mal_data) * 10)
@@ -118,5 +116,5 @@ data = pd.concat([ben_data, mal_data], ignore_index=True).sample(frac=1)
 
 train, test = train_test_split(data, test_size=0.2)
 
-train.to_csv(args.training_data, index=False)
-test.to_csv(args.testing_data, index=False)
+train.to_csv(args.train_data, index=False)
+test.to_csv(args.test_data, index=False)
