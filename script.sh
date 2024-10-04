@@ -1,41 +1,59 @@
 #!/bin/sh
 
+data=ctu
+echo Data: $data
+
 for botnet in neris rbot virut menti murlo
 do
     echo Botnet: $botnet
 
     echo Script: preprocessing.py
-    python scripts/ctu/preprocessing.py --benign-data data/ctu/raw/benign.csv --malicious-data data/ctu/raw/malicious/$botnet.csv --train-data data/ctu/processed/train/$botnet.csv --test-data data/ctu/processed/test/$botnet.csv
+    python scripts/$data/preprocessing.py --benign-data data/$data/raw/benign.csv --malicious-data data/$data/raw/malicious/$botnet.csv --train-data data/$data/processed/train/$botnet.csv --test-data data/$data/processed/test/$botnet.csv
 
     echo Script: graphsage.py
-    python scripts/ctu/graphsage.py --train-data data/ctu/processed/train/$botnet.csv --test-data data/ctu/processed/test/$botnet.csv --model models/ctu/graphsage/$botnet.pth --scores scores/ctu/graphsage/$botnet.csv
+    python scripts/$data/graphsage.py --train-data data/$data/processed/train/$botnet.csv --model models/$data/graphsage/$botnet.pth
+
+    echo Script: dummyexplainer.py
+    python scripts/$data/dummyexplainer.py --test-data data/$data/processed/test/$botnet.csv --model models/$data/graphsage/$botnet.pth --scores scores/$data/graphsage/dummyexplainer/$botnet.csv
 
     echo Script: gnnexplainer.py
-    python scripts/ctu/gnnexplainer.py --test-data data/ctu/processed/test/$botnet.csv --model models/ctu/graphsage/$botnet.pth --scores scores/ctu/gnnexplainer/$botnet.csv
-
-    echo Script: captumexplainer.py
-    python scripts/ctu/captumexplainer.py --test-data data/ctu/processed/test/$botnet.csv --model models/ctu/graphsage/$botnet.pth --scores scores/ctu/captumexplainer/$botnet.csv
+    python scripts/$data/gnnexplainer.py --test-data data/$data/processed/test/$botnet.csv --model models/$data/graphsage/$botnet.pth --scores scores/$data/graphsage/gnnexplainer/$botnet.csv
 
     echo Script: graphmaskexplainer.py
-    python scripts/ctu/graphmaskexplainer.py --test-data data/ctu/processed/test/$botnet.csv --model models/ctu/graphsage/$botnet.pth --scores scores/ctu/graphmaskexplainer/$botnet.csv
+    python scripts/$data/graphmaskexplainer.py --test-data data/$data/processed/test/$botnet.csv --model models/$data/graphsage/$botnet.pth --scores scores/$data/graphsage/graphmaskexplainer/$botnet.csv
+
+    echo Script: integratedgradients.py
+    python scripts/$data/integratedgradients.py --test-data data/$data/processed/test/$botnet.csv --model models/$data/graphsage/$botnet.pth --scores scores/$data/graphsage/integratedgradients/$botnet.csv
+
+    echo Script: saliency.py
+    python scripts/$data/saliency.py --test-data data/$data/processed/test/$botnet.csv --model models/$data/graphsage/$botnet.pth --scores scores/$data/graphsage/saliency/$botnet.csv
 done
+
+data=ton
+echo Data: $data
 
 for attack in backdoor ddos dos injection password ransomware scanning xss
 do
     echo Attack: $attack
 
     echo Script: preprocessing.py
-    python scripts/ton/preprocessing.py --benign-data data/ton/raw/benign.csv --malicious-data data/ton/raw/malicious/$attack.csv --train-data data/ton/processed/train/$attack.csv --test-data data/ton/processed/test/$attack.csv
+    python scripts/$data/preprocessing.py --benign-data data/$data/raw/benign.csv --malicious-data data/$data/raw/malicious/$attack.csv --train-data data/$data/processed/train/$attack.csv --test-data data/$data/processed/test/$attack.csv
 
     echo Script: graphsage.py
-    python scripts/ton/graphsage.py --train-data data/ton/processed/train/$attack.csv --test-data data/ton/processed/test/$attack.csv --model models/ton/graphsage/$attack.pth --scores scores/ton/graphsage/$attack.csv
+    python scripts/$data/graphsage.py --train-data data/$data/processed/train/$attack.csv --model models/$data/graphsage/$attack.pth
+
+    echo Script: dummyexplainer.py
+    python scripts/$data/dummyexplainer.py --test-data data/$data/processed/test/$attack.csv --model models/$data/graphsage/$attack.pth --scores scores/$data/graphsage/dummyexplainer/$attack.csv
 
     echo Script: gnnexplainer.py
-    python scripts/ton/gnnexplainer.py --test-data data/ton/processed/test/$attack.csv --model models/ton/graphsage/$attack.pth --scores scores/ton/gnnexplainer/$attack.csv
-
-    echo Script: captumexplainer.py
-    python scripts/ton/captumexplainer.py --test-data data/ton/processed/test/$attack.csv --model models/ton/graphsage/$attack.pth --scores scores/ton/captumexplainer/$attack.csv
+    python scripts/$data/gnnexplainer.py --test-data data/$data/processed/test/$attack.csv --model models/$data/graphsage/$attack.pth --scores scores/$data/graphsage/gnnexplainer/$attack.csv
 
     echo Script: graphmaskexplainer.py
-    python scripts/ton/graphmaskexplainer.py --test-data data/ton/processed/test/$attack.csv --model models/ton/graphsage/$attack.pth --scores scores/ton/graphmaskexplainer/$attack.csv
+    python scripts/$data/graphmaskexplainer.py --test-data data/$data/processed/test/$attack.csv --model models/$data/graphsage/$attack.pth --scores scores/$data/graphsage/graphmaskexplainer/$attack.csv
+
+    echo Script: integratedgradients.py
+    python scripts/$data/integratedgradients.py --test-data data/$data/processed/test/$attack.csv --model models/$data/graphsage/$attack.pth --scores scores/$data/graphsage/integratedgradients/$attack.csv
+
+    echo Script: saliency.py
+    python scripts/$data/saliency.py --test-data data/$data/processed/test/$attack.csv --model models/$data/graphsage/$attack.pth --scores scores/$data/graphsage/saliency/$attack.csv
 done

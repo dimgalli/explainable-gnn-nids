@@ -33,16 +33,16 @@ def to_graph(data):
     G = G.to_directed()
 
     g = dgl.from_networkx(G, edge_attrs=['i', 'x', 'Label'])
-    lg = g.line_graph(shared=True)
+    g = g.line_graph(shared=True)
 
-    data = from_dgl(lg)
+    data = from_dgl(g)
     return data
 
 
-parser = argparse.ArgumentParser(description='Train and test GNNExplainer algorithm')
+parser = argparse.ArgumentParser(description='Test GraphSAGE model with GNNExplainer algorithm')
 parser.add_argument('--test-data', type=str, required=True, help='path to test data')
 parser.add_argument('--model', type=str, required=True, help='path to GraphSAGE model')
-parser.add_argument('--scores', type=str, required=True, help='path to save the GNNExplainer algorithm scores')
+parser.add_argument('--scores', type=str, required=True, help='path to save the GraphSAGE model scores')
 
 args = parser.parse_args()
 
@@ -65,32 +65,33 @@ test_data[feat] = scaler.fit_transform(test_data[feat])
 test_data.insert(42, 'i', test_data.index)
 test_data.insert(43, 'x', test_data[feat].values.tolist())
 
-model = torch.load(args.model)
+model = torch.load(args.model, weights_only=False)
+model.eval()
 
 model_config = ModelConfig(
-    mode='binary_classification',
+    mode='multiclass_classification',
     task_level='node',
     return_type='raw'
 )
 
 explainer = Explainer(
     model=model,
-    algorithm=GNNExplainer(epochs=100),
+    algorithm=GNNExplainer(100),
     explanation_type='model',
     model_config=model_config,
-    node_mask_type='object',
-    edge_mask_type=None
+    node_mask_type='attributes'
 )
 
 edge_identifiers, labels, node_importances, predictions = [], [], [], []
 for batch in get_batch(test_data):
     data = to_graph(batch)
+
     explanation = explainer(data.x, data.edge_index)
     prediction = explainer.get_prediction(data.x, data.edge_index).argmax(1)
 
     edge_identifiers += data.i.tolist()
     labels += data.Label.tolist()
-    node_importances += explanation.node_mask.squeeze().tolist()
+    node_importances += explanation.node_mask.mean(1).tolist()
     predictions += prediction.tolist()
 
 edge_identifiers = np.array(edge_identifiers)
@@ -98,47 +99,46 @@ labels = np.array(labels)
 node_importances = np.array(node_importances)
 predictions = np.array(predictions)
 
-mask = (labels == 0) & (predictions == 0)
-edge_identifiers = edge_identifiers[mask]
-labels = labels[mask]
-node_importances = node_importances[mask]
-predictions = predictions[mask]
-
 index_array = np.argsort(node_importances)[::-1]
 edge_identifiers = edge_identifiers[index_array]
 labels = labels[index_array]
 node_importances = node_importances[index_array]
 predictions = predictions[index_array]
 
-topk = len(edge_identifiers) // 2
-edge_identifiers = edge_identifiers[:topk]
-labels = labels[:topk]
-node_importances = node_importances[:topk]
-predictions = predictions[:topk]
+mask = (labels == 0) & (predictions == 0)
+edge_identifiers = edge_identifiers[mask]
+labels = labels[mask]
+node_importances = node_importances[mask]
+predictions = predictions[mask]
+
+top_k = 100
+edge_identifiers = edge_identifiers[:top_k]
+labels = labels[:top_k]
+node_importances = node_importances[:top_k]
+predictions = predictions[:top_k]
 
 amounts = [0, 1, 2, 5, 10, 20]
 f1_scores = []
 precision_scores = []
 recall_scores = []
-
 for amount in amounts:
     ben_data = test_data.loc[edge_identifiers]
     mal_data = test_data[test_data.Label == 1]
 
-    srcaddrport = mal_data.SrcAddrPort.unique()
+    c_nodes = mal_data['SrcAddrPort'].unique()
 
-    adv_data = ben_data.sample(amount * len(srcaddrport), replace=True)
-    adv_data.SrcAddrPort = amount * list(srcaddrport)
+    adv_data = ben_data.sample(amount * len(c_nodes), replace=True)
+    adv_data['SrcAddrPort'] = amount * list(c_nodes)
 
-    adv_data = pd.concat([adv_data, test_data], ignore_index=True)
+    aug_data = pd.concat([adv_data, test_data], ignore_index=True)
 
-    model.eval()
     labels, predictions = [], []
     with torch.no_grad():
-        for batch in get_batch(adv_data):
+        for batch in get_batch(aug_data):
             data = to_graph(batch)
+
             prediction = model(data.x, data.edge_index).argmax(1)
-            
+
             labels += data.Label.tolist()
             predictions += prediction.tolist()
     

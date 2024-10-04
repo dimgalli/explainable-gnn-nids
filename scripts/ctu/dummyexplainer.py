@@ -11,7 +11,7 @@ import torch
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.preprocessing import MinMaxScaler
 from torch_geometric.explain import Explainer, ModelConfig
-from torch_geometric.explain.algorithm import GraphMaskExplainer
+from torch_geometric.explain.algorithm import DummyExplainer
 from torch_geometric.utils.convert import from_dgl
 
 
@@ -39,7 +39,7 @@ def to_graph(data):
     return data
 
 
-parser = argparse.ArgumentParser(description='Test GraphSAGE model with GraphMaskExplainer algorithm')
+parser = argparse.ArgumentParser(description='Test GraphSAGE model with DummyExplainer algorithm')
 parser.add_argument('--test-data', type=str, required=True, help='path to test data')
 parser.add_argument('--model', type=str, required=True, help='path to GraphSAGE model')
 parser.add_argument('--scores', type=str, required=True, help='path to save the GraphSAGE model scores')
@@ -76,7 +76,7 @@ model_config = ModelConfig(
 
 explainer = Explainer(
     model=model,
-    algorithm=GraphMaskExplainer(2),
+    algorithm=DummyExplainer(),
     explanation_type='model',
     model_config=model_config,
     node_mask_type='attributes'

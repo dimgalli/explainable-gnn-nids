@@ -11,7 +11,7 @@ import torch
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.preprocessing import MinMaxScaler
 from torch_geometric.explain import Explainer, ModelConfig
-from torch_geometric.explain.algorithm import GraphMaskExplainer
+from torch_geometric.explain.algorithm import CaptumExplainer
 from torch_geometric.utils.convert import from_dgl
 
 
@@ -29,17 +29,17 @@ def get_batch(data):
 
 
 def to_graph(data):
-    G = nx.from_pandas_edgelist(data, source='SrcAddrPort', target='DstAddrPort', edge_attr=['i', 'x', 'Label'], create_using=nx.MultiGraph())
+    G = nx.from_pandas_edgelist(data, source='src_ip_port', target='dst_ip_port', edge_attr=['i', 'x', 'label'], create_using=nx.MultiGraph())
     G = G.to_directed()
 
-    g = dgl.from_networkx(G, edge_attrs=['i', 'x', 'Label'])
+    g = dgl.from_networkx(G, edge_attrs=['i', 'x', 'label'])
     g = g.line_graph(shared=True)
 
     data = from_dgl(g)
     return data
 
 
-parser = argparse.ArgumentParser(description='Test GraphSAGE model with GraphMaskExplainer algorithm')
+parser = argparse.ArgumentParser(description='Test GraphSAGE model with Saliency algorithm')
 parser.add_argument('--test-data', type=str, required=True, help='path to test data')
 parser.add_argument('--model', type=str, required=True, help='path to GraphSAGE model')
 parser.add_argument('--scores', type=str, required=True, help='path to save the GraphSAGE model scores')
@@ -55,15 +55,15 @@ if not os.path.exists(args.model) or not os.path.isfile(args.model):
 test_data = pd.read_csv(args.test_data)
 
 feat = list(test_data)
-feat.remove('SrcAddrPort')
-feat.remove('DstAddrPort')
-feat.remove('Label')
+feat.remove('src_ip_port')
+feat.remove('dst_ip_port')
+feat.remove('label')
 
 scaler = MinMaxScaler()
 test_data[feat] = scaler.fit_transform(test_data[feat])
 
-test_data.insert(42, 'i', test_data.index)
-test_data.insert(43, 'x', test_data[feat].values.tolist())
+test_data.insert(38, 'i', test_data.index)
+test_data.insert(39, 'x', test_data[feat].values.tolist())
 
 model = torch.load(args.model, weights_only=False)
 model.eval()
@@ -76,7 +76,7 @@ model_config = ModelConfig(
 
 explainer = Explainer(
     model=model,
-    algorithm=GraphMaskExplainer(2),
+    algorithm=CaptumExplainer('Saliency'),
     explanation_type='model',
     model_config=model_config,
     node_mask_type='attributes'
@@ -90,7 +90,7 @@ for batch in get_batch(test_data):
     prediction = explainer.get_prediction(data.x, data.edge_index).argmax(1)
 
     edge_identifiers += data.i.tolist()
-    labels += data.Label.tolist()
+    labels += data.label.tolist()
     node_importances += explanation.node_mask.mean(1).tolist()
     predictions += prediction.tolist()
 
@@ -123,12 +123,12 @@ precision_scores = []
 recall_scores = []
 for amount in amounts:
     ben_data = test_data.loc[edge_identifiers]
-    mal_data = test_data[test_data.Label == 1]
+    mal_data = test_data[test_data.label == 1]
 
-    c_nodes = mal_data['SrcAddrPort'].unique()
+    c_nodes = mal_data['src_ip_port'].unique()
 
     adv_data = ben_data.sample(amount * len(c_nodes), replace=True)
-    adv_data['SrcAddrPort'] = amount * list(c_nodes)
+    adv_data['src_ip_port'] = amount * list(c_nodes)
 
     aug_data = pd.concat([adv_data, test_data], ignore_index=True)
 
@@ -139,7 +139,7 @@ for amount in amounts:
 
             prediction = model(data.x, data.edge_index).argmax(1)
 
-            labels += data.Label.tolist()
+            labels += data.label.tolist()
             predictions += prediction.tolist()
     
     f1_scores.append(f1_score(labels, predictions))
