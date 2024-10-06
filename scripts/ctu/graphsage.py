@@ -74,7 +74,7 @@ model = GraphSAGE(
     hidden_channels=64,
     num_layers=2,
     out_channels=2,
-    dropout=0.2
+    dropout=0.0
 )
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
