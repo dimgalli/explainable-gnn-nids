@@ -66,7 +66,6 @@ test_data.insert(38, 'i', test_data.index)
 test_data.insert(39, 'x', test_data[feat].values.tolist())
 
 model = torch.load(args.model, weights_only=False)
-model.eval()
 
 model_config = ModelConfig(
     mode='multiclass_classification',
@@ -111,11 +110,10 @@ labels = labels[mask]
 node_importances = node_importances[mask]
 predictions = predictions[mask]
 
-top_k = 100
-edge_identifiers = edge_identifiers[:top_k]
-labels = labels[:top_k]
-node_importances = node_importances[:top_k]
-predictions = predictions[:top_k]
+edge_identifiers = edge_identifiers[:1000]
+labels = labels[:1000]
+node_importances = node_importances[:1000]
+predictions = predictions[:1000]
 
 amounts = [0, 1, 2, 5, 10, 20]
 f1_scores = []
@@ -132,6 +130,8 @@ for amount in amounts:
 
     aug_data = pd.concat([adv_data, test_data], ignore_index=True)
 
+    model.eval()
+    
     labels, predictions = [], []
     with torch.no_grad():
         for batch in get_batch(aug_data):
