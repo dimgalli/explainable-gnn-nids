@@ -35,11 +35,10 @@ def to_graph(data):
     g = dgl.from_networkx(G, edge_attrs=['i', 'x', 'Label'])
     g = g.line_graph(shared=True)
 
-    data = from_dgl(g)
-    return data
+    return from_dgl(g)
 
 
-parser = argparse.ArgumentParser(description='Test GraphSAGE model with GNNExplainer algorithm')
+parser = argparse.ArgumentParser(description='Test GraphSAGE model with GNNExplainer')
 parser.add_argument('--test-data', type=str, required=True, help='path to test data')
 parser.add_argument('--model', type=str, required=True, help='path to GraphSAGE model')
 parser.add_argument('--scores', type=str, required=True, help='path to save the GraphSAGE model scores')
@@ -78,19 +77,19 @@ explainer = Explainer(
     algorithm=GNNExplainer(100),
     explanation_type='model',
     model_config=model_config,
-    node_mask_type='object'
+    node_mask_type='attributes'
 )
 
 edge_identifiers, labels, node_importances, predictions = [], [], [], []
 for batch in get_batch(test_data):
-    data = to_graph(batch)
+    graph = to_graph(batch)
 
-    explanation = explainer(data.x, data.edge_index)
-    prediction = explainer.get_prediction(data.x, data.edge_index).argmax(1)
+    explanation = explainer(graph.x, graph.edge_index)
+    prediction = explainer.get_prediction(graph.x, graph.edge_index).argmax(1)
 
-    edge_identifiers += data.i.tolist()
-    labels += data.Label.tolist()
-    node_importances += explanation.node_mask.squeeze(1).tolist()
+    edge_identifiers += graph.i.tolist()
+    labels += graph.Label.tolist()
+    node_importances += explanation.node_mask.mean(1).tolist()
     predictions += prediction.tolist()
 
 edge_identifiers = np.array(edge_identifiers)
@@ -104,16 +103,17 @@ labels = labels[index_array]
 node_importances = node_importances[index_array]
 predictions = predictions[index_array]
 
-mask = (labels == 0) & (predictions == 0)
-edge_identifiers = edge_identifiers[mask]
-labels = labels[mask]
-node_importances = node_importances[mask]
-predictions = predictions[mask]
+mask_array = (labels == 0) & (predictions == 0)
+edge_identifiers = edge_identifiers[mask_array]
+labels = labels[mask_array]
+node_importances = node_importances[mask_array]
+predictions = predictions[mask_array]
 
-edge_identifiers = edge_identifiers[:1000]
-labels = labels[:1000]
-node_importances = node_importances[:1000]
-predictions = predictions[:1000]
+top_k = len(edge_identifiers) // 2
+edge_identifiers = edge_identifiers[:top_k]
+labels = labels[:top_k]
+node_importances = node_importances[:top_k]
+predictions = predictions[:top_k]
 
 amounts = [0, 1, 2, 5, 10, 20]
 f1_scores = []
@@ -135,11 +135,11 @@ for amount in amounts:
     labels, predictions = [], []
     with torch.no_grad():
         for batch in get_batch(aug_data):
-            data = to_graph(batch)
+            graph = to_graph(batch)
 
-            prediction = model(data.x, data.edge_index).argmax(1)
+            prediction = model(graph.x, graph.edge_index).argmax(1)
 
-            labels += data.Label.tolist()
+            labels += graph.Label.tolist()
             predictions += prediction.tolist()
     
     f1_scores.append(f1_score(labels, predictions))

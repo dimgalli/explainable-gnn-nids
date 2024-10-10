@@ -7,6 +7,7 @@ import networkx as nx
 import pandas as pd
 import torch
 import torch.nn.functional as F
+import torch.optim as optim
 
 from sklearn.preprocessing import MinMaxScaler
 from torch_geometric.nn import GraphSAGE
@@ -44,8 +45,7 @@ def to_graph(data):
     g = dgl.from_networkx(G, edge_attrs=['x', 'Label'])
     g = g.line_graph(shared=True)
 
-    data = from_dgl(g)
-    return data
+    return from_dgl(g)
 
 
 parser = argparse.ArgumentParser(description='Train GraphSAGE model')
@@ -74,26 +74,26 @@ model = GraphSAGE(
     hidden_channels=64,
     num_layers=2,
     out_channels=2,
-    dropout=0.0
+    dropout=0.2
 )
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 for epoch in range(1, 101):
     model.train()
 
     total_loss = total_nodes = 0
     for batch in get_batch(train_data):
-        data = to_graph(batch)
+        graph = to_graph(batch)
         
         optimizer.zero_grad()
-        out = model(data.x, data.edge_index)
-        loss = F.cross_entropy(out, data.Label)
+        out = model(graph.x, graph.edge_index)
+        loss = F.cross_entropy(out, graph.Label)
         loss.backward()
         optimizer.step()
         
-        total_loss += loss.item() * data.num_nodes
-        total_nodes += data.num_nodes
+        total_loss += loss.item() * graph.num_nodes
+        total_nodes += graph.num_nodes
     
     print('Epoch {:03d}, Loss = {:.3f}'.format(epoch, total_loss / total_nodes))
 
