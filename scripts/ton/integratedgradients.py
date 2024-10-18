@@ -109,7 +109,7 @@ labels = labels[mask_array]
 node_importances = node_importances[mask_array]
 predictions = predictions[mask_array]
 
-top_k = len(edge_identifiers) // 2
+top_k = len(edge_identifiers) // 4
 edge_identifiers = edge_identifiers[:top_k]
 labels = labels[:top_k]
 node_importances = node_importances[:top_k]
