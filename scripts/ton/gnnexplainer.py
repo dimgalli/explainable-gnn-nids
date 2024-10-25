@@ -109,13 +109,13 @@ labels = labels[mask_array]
 node_importances = node_importances[mask_array]
 predictions = predictions[mask_array]
 
-top_k = len(edge_identifiers) // 4
+top_k = len(edge_identifiers) // 10
 edge_identifiers = edge_identifiers[:top_k]
 labels = labels[:top_k]
 node_importances = node_importances[:top_k]
 predictions = predictions[:top_k]
 
-amounts = [0, 1, 2, 5, 10, 20]
+amounts = [0, 1, 2, 5, 10, 20, 50]
 f1_scores = []
 precision_scores = []
 recall_scores = []

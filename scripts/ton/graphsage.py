@@ -71,10 +71,10 @@ train_data.insert(38, 'x', train_data[feat].values.tolist())
 
 model = GraphSAGE(
     in_channels=36,
-    hidden_channels=64,
-    num_layers=2,
+    hidden_channels=256,
+    num_layers=3,
     out_channels=2,
-    dropout=0.2
+    dropout=0.0
 )
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
