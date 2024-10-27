@@ -77,7 +77,7 @@ explainer = Explainer(
     algorithm=GNNExplainer(100),
     explanation_type='model',
     model_config=model_config,
-    node_mask_type='object'
+    node_mask_type='attributes'
 )
 
 edge_identifiers, labels, node_importances, predictions = [], [], [], []
@@ -89,7 +89,7 @@ for batch in get_batch(test_data):
 
     edge_identifiers += graph.i.tolist()
     labels += graph.Label.tolist()
-    node_importances += explanation.node_mask.squeeze().tolist()
+    node_importances += explanation.node_mask.mean(1).tolist()
     predictions += prediction.tolist()
 
 edge_identifiers = np.array(edge_identifiers)
@@ -115,7 +115,7 @@ labels = labels[:top_k]
 node_importances = node_importances[:top_k]
 predictions = predictions[:top_k]
 
-amounts = [0, 1, 2, 5, 10, 20, 50]
+amounts = [0, 1, 2, 5, 10, 20]
 f1_scores = []
 precision_scores = []
 recall_scores = []

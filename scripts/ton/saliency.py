@@ -115,7 +115,7 @@ labels = labels[:top_k]
 node_importances = node_importances[:top_k]
 predictions = predictions[:top_k]
 
-amounts = [0, 1, 2, 5, 10, 20, 50]
+amounts = [0, 1, 2, 5, 10, 20]
 f1_scores = []
 precision_scores = []
 recall_scores = []
