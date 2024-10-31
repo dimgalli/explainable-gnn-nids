@@ -7,7 +7,6 @@ import networkx as nx
 import pandas as pd
 import torch
 import torch.nn.functional as F
-import torch.optim as optim
 
 from sklearn.preprocessing import MinMaxScaler
 from torch_geometric.nn import GraphSAGE
@@ -77,9 +76,10 @@ model = GraphSAGE(
     dropout=0.2
 )
 
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-for epoch in range(1, 101):
+epochs = 100
+for epoch in range(1, epochs + 1):
     model.train()
 
     total_loss = total_nodes = 0

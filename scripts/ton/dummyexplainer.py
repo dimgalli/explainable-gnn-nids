@@ -38,7 +38,7 @@ def to_graph(data):
     return from_dgl(g)
 
 
-parser = argparse.ArgumentParser(description='Test GraphSAGE model with DummyExplainer')
+parser = argparse.ArgumentParser(description='Test GraphSAGE model with DummyExplainer algorithm')
 parser.add_argument('--test-data', type=str, required=True, help='path to test data')
 parser.add_argument('--model', type=str, required=True, help='path to GraphSAGE model')
 parser.add_argument('--scores', type=str, required=True, help='path to save the GraphSAGE model scores')
@@ -77,7 +77,7 @@ explainer = Explainer(
     algorithm=DummyExplainer(),
     explanation_type='model',
     model_config=model_config,
-    node_mask_type='attributes'
+    node_mask_type='object'
 )
 
 edge_identifiers, labels, node_importances, predictions = [], [], [], []
@@ -85,11 +85,11 @@ for batch in get_batch(test_data):
     graph = to_graph(batch)
 
     explanation = explainer(graph.x, graph.edge_index)
-    prediction = explainer.get_prediction(graph.x, graph.edge_index).argmax(1)
+    prediction = model(graph.x, graph.edge_index).argmax(1)
 
     edge_identifiers += graph.i.tolist()
     labels += graph.label.tolist()
-    node_importances += explanation.node_mask.mean(1).tolist()
+    node_importances += explanation.node_mask.squeeze().tolist()
     predictions += prediction.tolist()
 
 edge_identifiers = np.array(edge_identifiers)
